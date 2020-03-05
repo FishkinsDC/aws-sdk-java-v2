@@ -21,15 +21,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
-
 import software.amazon.awssdk.annotations.SdkPublicApi;
+import software.amazon.awssdk.enhanced.dynamodb.AttributeValueType;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClientExtension;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.TableMetadata;
 import software.amazon.awssdk.enhanced.dynamodb.internal.operations.OperationContext;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.AttributeTag;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.AttributeValueType;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.StaticAttributeTag;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.StaticTableMetadata;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 /**
@@ -74,27 +75,23 @@ public final class VersionedRecordExtension implements DynamoDbEnhancedClientExt
         private AttributeTags() {
         }
 
-        public static AttributeTag version() {
+        public static StaticAttributeTag versionAttribute() {
             return VERSION_ATTRIBUTE;
         }
     }
 
-    private static class VersionAttribute extends AttributeTag {
+    private static class VersionAttribute implements StaticAttributeTag {
         @Override
-        protected boolean isKeyAttribute() {
-            return true;
-        }
-
-        @Override
-        public Map<String, Object> customMetadataForAttribute(String attributeName,
-                                                              AttributeValueType attributeValueType) {
+        public Consumer<StaticTableMetadata.Builder> modifyMetadata(String attributeName,
+                                                                    AttributeValueType attributeValueType) {
             if (!AttributeValueType.N.equals(attributeValueType)) {
-                throw new IllegalArgumentException(String.format("Attribute '%s' of type %s is not a suitable type to"
-                    + " be used as a version attribute. Only type 'N' is supported.", attributeName,
-                                                                 attributeValueType.name()));
+                throw new IllegalArgumentException(String.format(
+                    "Attribute '%s' of type %s is not a suitable type to be used as a version attribute. Only type 'N' " +
+                        "is supported.", attributeName, attributeValueType.name()));
             }
 
-            return Collections.singletonMap(CUSTOM_METADATA_KEY, attributeName);
+            return metadata -> metadata.addCustomMetadataObject(CUSTOM_METADATA_KEY, attributeName)
+                                       .markAttributeAsKey(attributeName, attributeValueType);
         }
     }
 

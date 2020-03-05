@@ -26,7 +26,6 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentMap;
-
 import org.junit.Test;
 
 public class TypeTokenTest {
