@@ -25,9 +25,8 @@ import java.util.function.Function;
 
 import software.amazon.awssdk.annotations.SdkPublicApi;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClientExtension;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbExtensionContext;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
-import software.amazon.awssdk.enhanced.dynamodb.TableMetadata;
-import software.amazon.awssdk.enhanced.dynamodb.internal.operations.OperationContext;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.AttributeTag;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.AttributeValueType;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -99,16 +98,15 @@ public final class VersionedRecordExtension implements DynamoDbEnhancedClientExt
     }
 
     @Override
-    public WriteModification beforeWrite(Map<String, AttributeValue> item,
-                                         OperationContext operationContext,
-                                         TableMetadata tableMetadata) {
-        Optional<String> versionAttributeKey = tableMetadata.customMetadataObject(CUSTOM_METADATA_KEY, String.class);
+    public WriteModification beforeWrite(DynamoDbExtensionContext.BeforeWrite context) {
+        Optional<String> versionAttributeKey = context.tableMetadata()
+                                                      .customMetadataObject(CUSTOM_METADATA_KEY, String.class);
 
         if (!versionAttributeKey.isPresent()) {
             return WriteModification.builder().build();
         }
 
-        Map<String, AttributeValue> itemToTransform = new HashMap<>(item);
+        Map<String, AttributeValue> itemToTransform = new HashMap<>(context.items());
         AttributeValue newVersionValue;
         Expression condition;
         Optional<AttributeValue> existingVersionValue =
